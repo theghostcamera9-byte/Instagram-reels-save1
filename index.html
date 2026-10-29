@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reel Saver</title>
+<style>
+:root{--bg:#fafafa;--card:#fff;--text:#1a1a1a;--muted:#6b6b6b;--border:#e3e3e3;--a:#e1306c;--b:#fd8d32}
+@media (prefers-color-scheme:dark){:root{--bg:#111;--card:#1c1c1c;--text:#f2f2f2;--muted:#9a9a9a;--border:#333}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+.card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 22px;text-align:center}
+h1{margin:0 0 6px;font-size:26px;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+p{margin:0 0 20px;color:var(--muted);font-size:14px}
+input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;margin-bottom:12px}
+button{width:100%;padding:14px;border:0;border-radius:12px;font-size:16px;font-weight:600;color:#fff;background:linear-gradient(90deg,var(--a),var(--b));cursor:pointer}
+button.alt{background:var(--bg);color:var(--text);border:1px solid var(--border);margin-bottom:10px}
+button:disabled{opacity:.6}
+#msg{margin-top:16px;font-size:14px;min-height:20px}
+.err{color:#d93025}.ok{color:#1e8e3e}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Reel Saver</h1>
+  <p>Instagram reel ya post ka link paste karo</p>
+  <input id="url" type="url" placeholder="https://www.instagram.com/reel/..." autocomplete="off">
+  <button class="alt" id="paste">Paste karo</button>
+  <button id="go">Download</button>
+  <div id="msg"></div>
+</div>
+<script>
+var url=document.getElementById('url'),msg=document.getElementById('msg'),go=document.getElementById('go');
+function say(t,c){msg.textContent=t;msg.className=c||''}
+document.getElementById('paste').onclick=async function(){
+  try{url.value=await navigator.clipboard.readText()}catch(e){say('Paste nahi hua, link khud paste karo','err')}
+};
+go.onclick=async function(){
+  var u=url.value.trim();
+  if(!/^https?:\/\/(www\.)?instagram\.com\//.test(u)){say('Sahi Instagram link daalo','err');return}
+  go.disabled=true;say('Download ho raha hai...');
+  try{
+    var r=await fetch('/api/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})});
+    if(!r.ok){var j=await r.json().catch(function(){return{}});throw new Error(j.error||'Failed')}
+    var b=await r.blob(),a=document.createElement('a');
+    a.href=URL.createObjectURL(b);a.download='instagram_video.mp4';document.body.appendChild(a);a.click();a.remove();
+    say('Ho gaya!','ok');
+  }catch(e){say('Backend connected nahi hai ya link private hai.','err')}
+  go.disabled=false;
+};
+</script>
+</body>
+</html>
